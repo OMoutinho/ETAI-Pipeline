@@ -1,5 +1,23 @@
 # Baseline Predictive Pipeline -- ETAI
 
+Gonçalo Moutinho - Nº 20260508
+
+Results:
+
+LR ->
+Train accuracy: 0.679
+Test accuracy:  0.678
+Gap (train - test): +0.001
+
+DT ->
+Train accuracy: 0.829
+Test accuracy:  0.622
+Gap (train - test): +0.207
+
+Overview:
+
+Currently the better model is LR, because it's not overfitting like DT model is
+
 This is the **starting point** for your semester project: a small but *complete* predictive pipeline -- every piece a real project needs (entry point, config, data loading, preprocessing, model, evaluation), just kept as simple as possible for now.
 
 The task: predict two-year recidivism using ProPublica's COMPAS
