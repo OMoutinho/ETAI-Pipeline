@@ -2,7 +2,7 @@
 
 Gonçalo Moutinho - Nº 20260508
 
-Results:
+Results 2nd Week:
 
 LR ->
 Train accuracy: 0.679
@@ -14,9 +14,30 @@ Train accuracy: 0.829
 Test accuracy:  0.622
 Gap (train - test): +0.207
 
-Overview:
+Overview 2nd week:
 
 Currently the better model is LR, because it's not overfitting like DT model is
+
+Results 3nd Week (After only Cleaning):
+
+LR ->
+Train accuracy: 0.678
+Test accuracy:  0.655
+Gap (train - test): +0.023
+
+After cleaning there was a unsignificant decrease in train and test accuracy, and a little increase in the gap
+
+DT ->
+Train accuracy: 0.799
+Test accuracy:  0.608
+Gap (train - test): +0.192
+
+After cleaning the data the gap have been reduced a little what suggests that the model may have reduced the possible overfitting
+The Accuracy dropped a little.
+
+Overview 3nd Week:
+
+Currently the better model is still LR, still has a better test accuracy
 
 This is the **starting point** for your semester project: a small but *complete* predictive pipeline -- every piece a real project needs (entry point, config, data loading, preprocessing, model, evaluation), just kept as simple as possible for now.
 
