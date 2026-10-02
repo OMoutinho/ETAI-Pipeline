@@ -74,7 +74,7 @@ preprocessing:
 model:
   # one of: "dummy" (majority-class floor), "logistic_regression", "decision_tree", "random_forest"
   # (random forest: sensible defaults, untuned -- see the example below)
-  type: "decision_tree" #"logistic_regression" 
+  type: "random_forest" #"logistic_regression" #"decision_tree"#
   params: {}
     # bumped from 1000 -- with this week's encoder/scaler pair in place, 1000 iterations
     # was cutting lbfgs off before it converged (a ConvergenceWarning, not a real problem,

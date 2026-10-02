@@ -45,6 +45,32 @@ The task: predict two-year recidivism using ProPublica's COMPAS
 dataset -- the data behind a real 2016 investigation into a risk-
 assessment algorithm actually used by US courts to help inform bail and sentencing decisions. See `data/README.md` for the full problem description and a complete data dictionary before you start.
 
+Results 4th Week:
+
+LR -> CV Train accuracy: 0.675
+     CV Validation accuracy: 0.671
+     Gap (train - validation): +0.004
+
+DT -> CV Train accuracy: 0.694
+     CV Validation accuracy: 0.611
+     Gap (train - validation): +0.083
+
+RF -> CV Train accuracy: 0.733
+     CV Validation accuracy: 0.645
+     Gap (train - validation): +0.089
+
+Overview 4th Week:
+
+This week, we introduced 5-fold stratified cross-validation on the development set to obtain a more reliable estimate of model performance and to reduce the dependence on a single train/validation split.
+
+The Logistic Regression model achieved the best validation accuracy, with approximately 67.1%, while also showing almost no gap between training and validation performance (+0.004). This suggests that the model generalizes well and does not show significant signs of overfitting.
+
+The Random Forest achieved a higher training accuracy (73.3%), but its validation accuracy was lower (64.5%), resulting in a larger gap of approximately 8.9 percentage points. This suggests that the model is fitting the training data more closely but does not generalize as well as Logistic Regression.
+
+The Decision Tree had the lowest validation accuracy (61.1%) and a gap of approximately 8.3 percentage points, also indicating overfitting.
+
+Therefore, based on the 5-fold cross-validation results and using accuracy as the evaluation metric, Logistic Regression is currently the best-performing model among the three tested models. However, the locked test set has not yet been evaluated, as it will only be used for the final evaluation after model selection is complete.
+
 It has some **deliberately weak spots**. Part of your work this
 semester is finding them and making them better -- see the pipeline progress table below, which tracks what changes and why as the weeks
 go on.
