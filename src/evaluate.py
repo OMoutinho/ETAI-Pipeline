@@ -49,7 +49,36 @@ def cross_validate_pipeline (pipeline, X,y, cv, scoring: str ="accuracy", n_jobs
         "validation": scores["test_score"],
     })
     fold_scores["gap"] = fold_scores["train"] - fold_scores["validation"]
-    #AINDA FALTA
+
+    y_oof = np.empty(len(X), dtype= np.asarray(y).dtype)
+    for model, val_idx in zip(scores["estimator"], scores["indices"]["test"]):
+        y_oof[val_idx] = model.predict(X.iloc[val_idx])
+    return fold_scores, y_oof
+
+def cv_report(fold_scores: pd.DataFrame, scoring: str = "accuracy") -> str:
+    """Per-fold table + mean +/- std, as text (printed and saved to results/)."""
+    lines = [
+        f"Cross-Validation ({len(fold_scores)} stratified folds, metric: {scoring})",
+        "",
+        fold_scores.to_string(index=False, float_format= lambda v: f"{v:.3f}"),
+        "",
+    ]
+
+    for col in ["train", "validation", "gap"]:
+        sign = "+" if col == "gap" else ""
+        lines.append(f"{col.capitalize():<11s} mean = {fold_scores[col].mean():{sign}.3f}  "
+                     f"std = {fold_scores[col].std(ddof = 1):.3f}")
+        text = "\n".join(lines)
+        print(text)
+        return text
+
+def oof_classification_report(y_true, y_pred) -> str:
+    """Classification report on the out-of-fold predictions."""
+    text = "Classification report (out-of-fold predictions, development set):\n" + \
+        classification_report(y_true, y_pred, zero_division=0)
+    print(text)
+    return text
+
 
 def fairness_report(y_test, y_pred, extras_test: pd.DataFrame, sensitive_attr: str = "race") -> str:
     """

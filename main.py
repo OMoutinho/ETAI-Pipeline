@@ -16,7 +16,7 @@ from src.preprocessing import (
     clean_dataset, drop_duplicate_rows, split_features_target, build_preprocessor, split_dev_test,
 )
 from src.model import build_model
-from src.evaluate import evaluate, fairness_report
+from src.evaluate import evaluate, fairness_report, cross_validate_pipeline, oof_classification_report, cv_report
 from src.results import save_run
 
 
@@ -49,16 +49,32 @@ def main():
         ("model", build_model(config["model"])),
     ])
 
+    cv_config = config["cv"]
+    shuffle = cv_config.get("shuffle", True)
+    cv = StratifiedKFold(n_splits= cv_config["n_splits"], shuffle= shuffle,
+                         random_state= cv_config.get("random_state") if shuffle else None)
+    scoring = cv_config.get("scoring", "accuracy")
 
-    final_model = pipeline.fit(X_dev, y_dev)
+    fold_scores, y_oof = cross_validate_pipeline(pipeline, X_dev, y_dev, cv=cv, scoring=scoring,
+                                                n_jobs=cv_config.get("n_jobs", 1))
 
-    y_dev_pred = final_model.predict(X_dev)
-    y_test_pred = final_model.predict(X_test)
-
-    report = evaluate(y_dev, y_dev_pred, y_test, y_test_pred)
+    report = cv_report(fold_scores, scoring)
+    report += "\n\n" + oof_classification_report(y_dev, y_oof)
     report += "\n" + fairness_report(
-        y_test, y_test_pred, extras_test, sensitive_attr=config["data"]["sensitive_attr"]
+        y_dev, y_oof, extras_dev, sensitive_attr=config["data"]["sensitive_attr"]
     )
+
+    # the model we'd actually use: same pipeline, refit on EVERY development row. CV above
+    # estimated how well this recipe does; it didn't produce a model.
+    final_model = pipeline.fit(X_dev, y_dev)
+    refit = f"Final model: {config['model']['type']} refit on all {len(X_dev)} development rows."
+    print(refit)
+    report += "\n" + refit + "\n"
+
+    locked = (f"Locked test set: {len(X_test)} rows set aside, not evaluated. "
+              f"Development set: {len(X_dev)} rows.")
+    print(locked)
+    report += "\n" + locked + "\n"
 
     results_dir = config.get("output", {}).get("results_dir", "results")
     path = save_run(results_dir, config, report)
@@ -67,3 +83,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
