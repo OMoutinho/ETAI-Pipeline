@@ -57,10 +57,23 @@ Tested all pipeline models with Optuna hyperparameter optimization (30 trials x 
 * **Fairness Audit (False Positive Rate by Race):**
   * Compared to COMPAS's original score (which had an FPR of **0.45** for African-Americans), our tuned models significantly reduced the disparity (e.g., African-American FPR dropped to **0.25 – 0.29**, while Caucasian FPR sat around **0.11 – 0.17**).
   
+### Week 7: Advanced Boosting Models & Expanded Evaluation Metrics
+Expanded the evaluation framework to include a comprehensive suite of metrics (`accuracy`, `balanced_accuracy`, `precision`, `recall`, `f1`, `fbeta_2`, `roc_auc`, `average_precision`), with model selection guided primarily by **ROC-AUC** (compared against a dummy no-model floor of 0.500).
 
-It has some **deliberately weak spots**. Part of your work this
-semester is finding them and making them better -- see the pipeline progress table below, which tracks what changes and why as the weeks
-go on.
+* **Gradient Boosting**
+  * **Honest Nested CV ROC-AUC:** **0.727** (std: 0.014)
+  * **Best Hyperparameters:** `n_estimators`: 426, `learning_rate`: 0.012, `max_depth`: 3, `min_samples_leaf`: 2, `subsample`: 0.766
+* **Hist Gradient Boosting**
+  * **Honest Nested CV ROC-AUC:** **0.728** (std: 0.016)
+  * **Best Hyperparameters:** `max_iter`: 92, `learning_rate`: 0.095, `max_leaf_nodes`: 6, `min_samples_leaf`: 84, `l2_regularization`: 0.001
+
+> **Overview 7th week:** 
+> Transitioning to boosting algorithms (especially Gradient Boosting and Hist Gradient Boosting optimized for ROC-AUC) noticeably improved ranking performance, achieving an AUC of ~0.728 compared to earlier accuracy-focused runs.
+
+* **Fairness Audit (False Positive Rate by Race — e.g., Hist Gradient Boosting):**
+  * **African-American:** FPR = **0.29** (significantly lower than COMPAS's original **0.45**).
+  * **Caucasian:** FPR = **0.15** (vs. COMPAS's **0.23**).
+  * **Hispanic:** FPR = **0.16**.
 
 ## Project structure
 
