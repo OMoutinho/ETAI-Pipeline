@@ -2,74 +2,61 @@
 
 Gonçalo Moutinho - Nº 20260508
 
-Results 2nd Week:
+### Week 2: Initial Baseline
+* **LR (Logistic Regression)**
+  * Train accuracy: 0.679
+  * Test accuracy: 0.678
+  * Gap (train - test): +0.001
+* **DT (Decision Tree)**
+  * Train accuracy: 0.829
+  * Test accuracy: 0.622
+  * Gap (train - test): +0.207
 
-LR ->
-Train accuracy: 0.679
-Test accuracy:  0.678
-Gap (train - test): +0.001
+> **Overview 2nd week:** Currently the better model is LR, because it's not overfitting like the DT model is.
 
-DT ->
-Train accuracy: 0.829
-Test accuracy:  0.622
-Gap (train - test): +0.207
+---
 
-Overview 2nd week:
+### Week 3: After Data Cleaning
+* **LR**
+  * Train accuracy: 0.678
+  * Test accuracy: 0.655
+  * Gap (train - test): +0.023  
+  * *Note:* After cleaning, there was an insignificant decrease in train/test accuracy and a slight increase in the gap.
+* **DT**
+  * Train accuracy: 0.799
+  * Test accuracy: 0.608
+  * Gap (train - test): +0.192  
+  * *Note:* After cleaning, the gap was reduced slightly, suggesting less overfitting, though accuracy dropped a bit.
 
-Currently the better model is LR, because it's not overfitting like DT model is
+> **Overview 3rd week:** Currently the better model is still LR, as it still has a better test accuracy.
 
-Results 3nd Week (After only Cleaning):
+---
 
-LR ->
-Train accuracy: 0.678
-Test accuracy:  0.655
-Gap (train - test): +0.023
+### Week 4: Stratified Cross-Validation
+Introduced 5-fold stratified cross-validation on the development set to obtain a more reliable performance estimate and reduce dependence on a single train/validation split.
 
-After cleaning there was a unsignificant decrease in train and test accuracy, and a little increase in the gap
+* **LR:** CV Train: 0.675 | CV Validation: 0.671 | Gap: +0.004
+* **DT:** CV Train: 0.694 | CV Validation: 0.611 | Gap: +0.083
+* **RF (Random Forest):** CV Train: 0.733 | CV Validation: 0.645 | Gap: +0.089
 
-DT ->
-Train accuracy: 0.799
-Test accuracy:  0.608
-Gap (train - test): +0.192
+> **Overview 4th week:** 
+> Logistic Regression achieved the best validation accuracy (~67.1%) with almost no gap (+0.004), showing great generalization. Random Forest and Decision Tree showed larger gaps (~8.9% and ~8.3%), indicating overfitting. LR remained the best-performing model (locked test set untouched).
 
-After cleaning the data the gap have been reduced a little what suggests that the model may have reduced the possible overfitting
-The Accuracy dropped a little.
+---
 
-Overview 3nd Week:
+### Weeks 5 & 6: Hyperparameter Tuning, Ensembles & Final Evaluation
+Tested all pipeline models with Optuna hyperparameter optimization (30 trials x 5 folds nested CV) using robust scaling and target encoding on the development set (5,771 rows), keeping a locked test set (1,443 rows) aside.
 
-Currently the better model is still LR, still has a better test accuracy
+* **Tuned Models Summary (Honest Nested CV Accuracy):**
+  * **Logistic Regression** (C $\approx$ 0.075): **67.1%** validation accuracy. Highly stable with minimal gap.
+  * **Decision Tree** (max_depth: 6, min_samples_leaf: 101): **67.2%** validation accuracy. Strong pruning to control overfitting.
+  * **Random Forest** (max_depth: 22, min_samples_leaf: 42, max_features: 0.5): **68.1%** validation accuracy.
+  * **Oblique Random Forest** (max_depth: 6, n_components: 5): **67.9%** validation accuracy.
+  * **AdaBoost** (max_depth: 4, n_estimators: 220, learning_rate: 0.025): **68.2%** validation accuracy (Top performer).
 
-This is the **starting point** for your semester project: a small but *complete* predictive pipeline -- every piece a real project needs (entry point, config, data loading, preprocessing, model, evaluation), just kept as simple as possible for now.
-
-The task: predict two-year recidivism using ProPublica's COMPAS
-dataset -- the data behind a real 2016 investigation into a risk-
-assessment algorithm actually used by US courts to help inform bail and sentencing decisions. See `data/README.md` for the full problem description and a complete data dictionary before you start.
-
-Results 4th Week:
-
-LR -> CV Train accuracy: 0.675
-     CV Validation accuracy: 0.671
-     Gap (train - validation): +0.004
-
-DT -> CV Train accuracy: 0.694
-     CV Validation accuracy: 0.611
-     Gap (train - validation): +0.083
-
-RF -> CV Train accuracy: 0.733
-     CV Validation accuracy: 0.645
-     Gap (train - validation): +0.089
-
-Overview 4th Week:
-
-This week, we introduced 5-fold stratified cross-validation on the development set to obtain a more reliable estimate of model performance and to reduce the dependence on a single train/validation split.
-
-The Logistic Regression model achieved the best validation accuracy, with approximately 67.1%, while also showing almost no gap between training and validation performance (+0.004). This suggests that the model generalizes well and does not show significant signs of overfitting.
-
-The Random Forest achieved a higher training accuracy (73.3%), but its validation accuracy was lower (64.5%), resulting in a larger gap of approximately 8.9 percentage points. This suggests that the model is fitting the training data more closely but does not generalize as well as Logistic Regression.
-
-The Decision Tree had the lowest validation accuracy (61.1%) and a gap of approximately 8.3 percentage points, also indicating overfitting.
-
-Therefore, based on the 5-fold cross-validation results and using accuracy as the evaluation metric, Logistic Regression is currently the best-performing model among the three tested models. However, the locked test set has not yet been evaluated, as it will only be used for the final evaluation after model selection is complete.
+* **Fairness Audit (False Positive Rate by Race):**
+  * Compared to COMPAS's original score (which had an FPR of **0.45** for African-Americans), our tuned models significantly reduced the disparity (e.g., African-American FPR dropped to **0.25 – 0.29**, while Caucasian FPR sat around **0.11 – 0.17**).
+  
 
 It has some **deliberately weak spots**. Part of your work this
 semester is finding them and making them better -- see the pipeline progress table below, which tracks what changes and why as the weeks
