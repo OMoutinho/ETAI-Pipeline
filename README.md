@@ -75,6 +75,25 @@ Expanded the evaluation framework to include a comprehensive suite of metrics (`
   * **Caucasian:** FPR = **0.15** (vs. COMPAS's **0.23**).
   * **Hispanic:** FPR = **0.16**.
 
+
+### Week 8: XGBoost Integration & Feature Selection Experiments
+Integrated **XGBoost** into the pipeline and tested the impact of automated feature selection (`VoteSelector` with `min_votes=2` before tuning) versus running with feature selection turned off.
+
+* **XGBoost (With Feature Selection: `min_votes=1` / kept features):**
+  * **Honest Nested CV ROC-AUC:** **0.726** (std: 0.013)
+  * **Features kept:** Reduced to key predictive features (e.g., `numeric__age`, `numeric__priors_count`).
+* **XGBoost (Feature Selection: `off`):**
+  * **Honest Nested CV ROC-AUC:** **0.727** (std: 0.015)
+  * **Best Hyperparameters:** `n_estimators`: 287, `learning_rate`: 0.015, `max_depth`: 3, `subsample`: 0.508.
+
+> **Overview 8th week:** 
+> Adding XGBoost yielded competitive performance matching the top boosting models (ROC-AUC ~0.727). Interestingly, turning feature selection off performed slightly better or on par with using `VoteSelector`, indicating that the gradient booster handles the full set of features robustly without harming generalization.
+
+* **Fairness Audit (False Positive Rate by Race — XGBoost):**
+  * **African-American:** FPR = **0.30** (substantially reduced compared to COMPAS's original **0.45**).
+  * **Caucasian:** FPR = **0.16** (vs. COMPAS's **0.23**).
+  * **Hispanic:** FPR = **0.16**.
+
 ## Project structure
 
 ```
