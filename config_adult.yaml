@@ -1,8 +1,13 @@
 data:
-  path: "data/adult_new.csv"                          # path to the CSV file with the data
-  target: "income_over_50k"                       # the column to predict
-  sensitive_attr: ["race", "sex"]                            # never a feature; used only for the fairness report
-  drop_columns: ["id"]  # kept in the data, never used as features
+  path: "data/adult_train.csv"
+  target: "income_over_50k"                         # 0/1, about 24% are 1
+  sensitive_attr: "sex"                             # never a feature; used only for the fairness report
+  # Kept in the data, never used as features.
+  #   id       identifier (predictions are saved by id)
+  #   fnlwgt   census sampling weight, not a characteristic of the person
+  #   education  one-to-one with education_num (keep the ordered one)
+  #   race     DECISION TO DOCUMENT: excluded as a feature (see README). Remove it from here to allow it.
+  drop_columns: ["id", "fnlwgt", "education", "race"]
 
 # Locked test set: never used to fit, tune or choose anything. Do not change once set.
 test_set:
@@ -20,44 +25,30 @@ cv:
 
 diagnostics:
   id_column: "id"
-  numeric_text_columns: ["priors_count", "prior_offenses"]
+  numeric_text_columns: []
   # "nan" catches real NaNs turned into text by the category cleanup.
-  placeholder_tokens: ["-", "?", "n/a", "N/A", "na", "NA", "", "nan"]
+  placeholder_tokens: ["?", "", "nan"]  
   validity_rules:
-    age: {min: 18, max: 100}
+    age: {min: 17, max: 100}
     decile_score: {min: 1, max: 10}
     juv_fel_count: {min: 0}
     priors_count: {min: 0, max: 60}
-  canonical_categories:
-    sex:
-      male: "Male"
-      female: "Female"
-    race:
-      african-american: "African-American"
-      african american: "African-American"
-      caucasian: "Caucasian"
-      hispanic: "Hispanic"
-      other: "Other"
-      asian: "Asian"
-      native american: "Native American"
-    c_charge_degree:
-      f: "F"
-      felony: "F"
-      m: "M"
-      misdemeanor: "M"
-    score_text:
-      low: "Low"
-      medium: "Medium"
-      high: "High"
+    education_num: {min: 1, max: 16}
+    hours_per_week: {min: 1, max: 99}
+    capital_gain: {min: 0}                        # 99999 is the census top code, NOT an error
+    capital_loss: {min: 0}
+  canonical_categories: {}                         # no spelling variants to fix in Adult
   redundant_columns: ["education"]
 
 preprocessing:
   encoder: "target"                                 # onehot | ordinal | count | target
   scaler: "robust"                                  # none | standard | minmax | robust
-  numeric_features: ["age", "juv_fel_count", "juv_misd_count", "juv_other_count", "priors_count"]
-  categorical_features: ["sex", "age_cat", "c_charge_degree"]
-  mnar_indicator_sources: ["priors_count", "c_charge_degree"]   # get a <col>_was_missing flag
-  random_state: 42                                  # target encoder's internal folds
+  numeric_features: ["age", "education_num", "capital_gain", "capital_loss", "hours_per_week", "v01", "v02", "v03", "v04", "v05", "v06", "v07", "v08", "v09", "v10", "v11", "v12", "v13", "v14", "v15", "v16", "v17", "v18"]
+  categorical_features: ["workclass", "marital_status", "occupation", "relationship", "native_country", "v19", "v20", "v21", "v22", "v23", "v24", "v25"]
+  # workclass and occupation are missing for the same people, so one flag carries the signal
+  # (two flags would be identical columns). native_country / v01-v06 have no pattern: impute only.
+  mnar_indicator_sources: ["occupation"]
+  random_state: 42
   imputation:
     numeric_strategy: "median"
     categorical_strategy: "most_frequent"
@@ -89,7 +80,7 @@ feature_selection:
     select__min_votes: {type: int, low: 1, high: 3}
 
 tuning:
-  enabled: true
+  enabled: false
   n_trials: 30
   n_splits: 5                                       # folds that score each candidate
   random_state: 42                                  # seeds the sampler and those folds

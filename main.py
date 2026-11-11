@@ -7,6 +7,7 @@ model) on the development set (several metrics, and the no-model floor on the sa
 -> [if tuning is enabled: nested CV of the tuning procedure, then tuning on all development rows]
 -> out-of-fold reports -> refit on all development rows -> scoreboard + full report
 """
+import sys
 import shutil
 import tempfile
 from datetime import datetime
@@ -30,7 +31,7 @@ def load_config(path: str = "config.yaml") -> dict:
 
 
 def main():
-    config = load_config()
+    config = load_config(sys.argv[1] if len(sys.argv) > 1 else "config.yaml")
     run = datetime.now().strftime("%Y%m%d_%H%M%S")
     model_type = config["model"]["type"]
 
