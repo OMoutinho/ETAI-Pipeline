@@ -34,6 +34,8 @@ def main():
     config = load_config(sys.argv[1] if len(sys.argv) > 1 else "config.yaml")
     run = datetime.now().strftime("%Y%m%d_%H%M%S")
     model_type = config["model"]["type"]
+    imputation_cfg = config.get("preprocessing", {}).get("imputation", {})
+    imputer_name = imputation_cfg.get("numeric_strategy", "median")
 
     df_raw = load_data(config["data"]["path"])
     df_clean = clean_dataset(df_raw, config["diagnostics"])
@@ -57,7 +59,7 @@ def main():
     n_jobs = cv_config.get("n_jobs", 1)
     selection_config = config.get("feature_selection") or {}
     selection_enabled = selection_config.get("enabled", False)
-    print(f"Model: {model_type}   |   selection metric: {selection_metric}   |   "
+    print(f"Model: {model_type}   |   imputer: {imputer_name}   |   selection metric: {selection_metric}   |   "
           f"{cv_config['n_splits']}-fold CV   |   feature selection: "
           f"{'min_votes ' + str(selection_config.get('min_votes', 2)) if selection_enabled else 'off'}")
     print(f"Data:  {len(X_dev)} development rows   |   {len(X_test)} test rows locked away (not used)")
@@ -73,7 +75,8 @@ def main():
     print("\nDefault hyperparameters (config.yaml)")
     print(f"  {selection_metric}: {untuned:.3f} ± {fold_scores['validation'].std(ddof=1):.3f}   "
           f"train-validation gap: {fold_scores['gap'].mean():+.3f}   no-model floor: {floor:.3f}")
-    report = (f"Hyperparameters from config.yaml: {config['model'].get('params')}\n\n"
+    report = (f"Imputer: {imputer_name}\n"
+              f"Hyperparameters from config.yaml: {config['model'].get('params')}\n\n"
               + cv_report(fold_scores, metrics, selection_metric, "Cross-validation")
               + f"\n\nNo-model floor (dummy, same folds): {selection_metric} = {floor:.3f}")
     final_scores = fold_scores
@@ -131,6 +134,7 @@ def main():
 
     row = {"run": run, "data": config["data"]["path"], "model": model_type, "tuned": tuning_enabled,
            "encoder": config["preprocessing"]["encoder"], "scaler": config["preprocessing"]["scaler"],
+           "imputer": imputer_name,
            "feature_selection": (f"min_votes {pipeline.named_steps['select'].min_votes}" if selection_enabled else "off"),
            "params": str(config["model"].get("params")), "tuned_params": str(study.best_params) if tuning_enabled else "",
            "metric": selection_metric, "mean": final_scores["validation"].mean(),
@@ -139,7 +143,7 @@ def main():
     runs = save_scores(config.get("output", {}).get("scoreboard", "results/runs.csv"), row)
     same = runs[(runs["data"] == row["data"]) & (runs["metric"] == selection_metric)]
     board = (same.sort_values("mean", ascending=False)
-             [["run", "model", "tuned", "feature_selection", "mean", "std", "untuned", "floor"]]
+             [["run", "model", "imputer", "tuned", "feature_selection", "mean", "std", "untuned", "floor"]]
              .rename(columns={"mean": selection_metric})
              .to_string(index=False, float_format=lambda v: f"{v:.3f}"))
     print(f"\nScoreboard (runs on the same data and metric; best first)\n{board}")
