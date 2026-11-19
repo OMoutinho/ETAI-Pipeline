@@ -38,7 +38,6 @@ def main():
     df_raw = load_data(config["data"]["path"])
     df_clean = clean_dataset(df_raw, config["diagnostics"])
     df_clean = drop_duplicate_rows(df_clean, config["diagnostics"].get("id_column"))
-
     mnar_sources = config["preprocessing"].get("mnar_indicator_sources", [])
     X, y, extras = split_features_target(df_clean, config["data"], mnar_sources)
 

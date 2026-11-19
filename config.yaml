@@ -52,15 +52,17 @@ diagnostics:
   redundant_columns: ["prior_offenses", "age_in_months", "juvenile_total"]
 
 preprocessing:
-  encoder: "target"                                 # onehot | ordinal | count | target
-  scaler: "robust"                                  # none | standard | minmax | robust
+  encoder: "target"
+  scaler: "robust"
   numeric_features: ["age", "juv_fel_count", "juv_misd_count", "juv_other_count", "priors_count"]
   categorical_features: ["sex", "age_cat", "c_charge_degree"]
-  mnar_indicator_sources: ["priors_count", "c_charge_degree"]   # get a <col>_was_missing flag
-  random_state: 42                                  # target encoder's internal folds
+  mnar_indicator_sources: ["priors_count", "c_charge_degree"]
+  random_state: 42
   imputation:
-    numeric_strategy: "median"
+    numeric_strategy: "median"          # Certifique-se de que corresponde a uma chave em _NUMERIC_IMPUTERS
     categorical_strategy: "most_frequent"
+    # Opcional (se o seu imputador numérico aceitar parâmetros adicionais como KNN):
+    # n_neighbors: 5
 
 model:
   type: "xgboost"  # dummy | logistic_regression | naive_bayes | decision_tree | random_forest | oblique_random_forest | adaboost | gradient_boosting | hist_gradient_boosting | xgboost
@@ -137,6 +139,10 @@ tuning:
       model__reg_alpha: {type: float, low: 0.001, high: 10.0, log: true}
       model__gamma: {type: float, low: 0.0, high: 5.0}
 
+fairness:
+  reference: {column: "score_text", label: "COMPAS's own score", negative_value: "Low"}
+  description: "share of people who did NOT reoffend, but were predicted to"
+  
 output:
   results_dir: "results"
   scoreboard: "results/runs.csv"                   
