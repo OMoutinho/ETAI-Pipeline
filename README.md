@@ -100,11 +100,16 @@ Upgraded numeric preprocessing to support configurable imputers via `preprocessi
 - **Oblique Random Forest (`median` imputer, tuned):**
   - **Honest Nested CV ROC-AUC:** **0.727** (std: 0.014; untuned: **0.685**, train-validation gap: +0.150 before tuning)
   - **Best Hyperparameters:** `estimator__tree__max_depth`: 28, `estimator__tree__min_samples_leaf`: 61, `estimator__project__n_components`: 8
-  - **New People Inference (`data/compas_new_people.csv`, threshold 0.5):** Predicted **5 positives** (`900004`, `900006`, `900012`, `900014`, `900017`) and **15 negatives** out of 20 new records[cite: 1].
+  - **New People Inference (`data/compas_new_people.csv`, threshold 0.5):** Predicted **5 positives** (`900004`, `900006`, `900012`, `900014`, `900017`) and **15 negatives** out of 20 new records.
 - **Logistic Regression (`median` imputer, tuned):**
   - **Honest Nested CV ROC-AUC:** **0.718** (std: 0.014; train-validation gap: +0.002)
   - **Best Hyperparameters:** `model__C`: ~0.00118, `model__penalty`: `l2`, `model__l1_ratio`: ~0.340
-  - **New People Inference (`data/compas_new_people.csv`, threshold 0.5):** More conservative under strong regularization, predicting **2 positives** (`900012` at 0.786, `900014` at 0.679) and **18 negatives** out of 20 new records[cite: 2].
+  - **New People Inference (`data/compas_new_people.csv`, threshold 0.5):** More conservative under strong regularization, predicting **2 positives** (`900012` at 0.786, `900014` at 0.679) and **18 negatives** out of 20 new records.
+  - **XGBoost (`median` imputer, tuned — run `20261119_150109`):**
+  - **Honest Nested CV ROC-AUC:** **0.727** (std: 0.015; untuned: **0.724**, train-validation gap: +0.034)
+  - **Additional Nested CV Metrics (mean ± std):** accuracy **0.681 ± 0.013**, balanced accuracy **0.670 ± 0.013**, precision **0.674 ± 0.025**, recall **0.567 ± 0.039**, F1 **0.615 ± 0.020**, F2 **0.585 ± 0.031**, average precision **0.691 ± 0.027**
+  - **Best Hyperparameters:** `n_estimators`: 287, `learning_rate`: 0.01466, `max_depth`: 3, `min_child_weight`: 1.993, `subsample`: 0.5083, `colsample_bytree`: 0.8338, `reg_lambda`: 0.1488, `reg_alpha`: 0.01377, `gamma`: 0.3906
+  - **New People Inference (`data/compas_new_people.csv`, threshold 0.5):** Predicted **5 positives** (`900004` at ~0.623, `900006` at ~0.590, `900012` at ~0.826, `900014` at ~0.718, `900017` at ~0.704) and **15 negatives** out of 20 new records.
 
 > **Overview 10th week:** 
 > Making the numeric imputer configurable and scaling prior to imputation keeps preprocessing leak-free and ready for unseen records without requiring target labels. Saving the fitted pipeline to `models/model.joblib` and running `predict.py` on `data/compas_new_people.csv` completed the end-to-end training-to-inference workflow while keeping the locked test set untouched for final evaluation.
