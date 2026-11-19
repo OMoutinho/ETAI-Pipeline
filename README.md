@@ -94,24 +94,52 @@ Integrated **XGBoost** into the pipeline and tested the impact of automated feat
   * **Caucasian:** FPR = **0.16** (vs. COMPAS's **0.23**).
   * **Hispanic:** FPR = **0.16**.
 
+### Week 10: Configurable Numeric Imputers, Model Persistence & Inference on New Data
+Upgraded numeric preprocessing to support configurable imputers via `preprocessing.imputation.numeric_strategy` (`median`, `mean`, `knn` via `KNNImputer`, `iterative` via MICE `IterativeImputer`, and `random_forest` via `IterativeImputer` with a random forest estimator per column), with numeric scaling applied before imputation so scalers ignore missing values during fitting and distance-based imputers operate on a common scale. None of the imputers uses the target (`y`), allowing safe inference on unseen data, while the chosen imputer is now printed, logged in `runs.csv`, and included in run report headers. `main.py` also saves the final fitted pipeline (refit on all 5,771 development rows, with the 1,443 test rows still locked) to `models/model.joblib`, paired with `predict.py` for batch inference on new CSVs (`data/compas_new_people.csv`).
+
+- **Oblique Random Forest (`median` imputer, tuned):**
+  - **Honest Nested CV ROC-AUC:** **0.727** (std: 0.014; untuned: **0.685**, train-validation gap: +0.150 before tuning)
+  - **Best Hyperparameters:** `estimator__tree__max_depth`: 28, `estimator__tree__min_samples_leaf`: 61, `estimator__project__n_components`: 8
+  - **New People Inference (`data/compas_new_people.csv`, threshold 0.5):** Predicted **5 positives** (`900004`, `900006`, `900012`, `900014`, `900017`) and **15 negatives** out of 20 new records[cite: 1].
+- **Logistic Regression (`median` imputer, tuned):**
+  - **Honest Nested CV ROC-AUC:** **0.718** (std: 0.014; train-validation gap: +0.002)
+  - **Best Hyperparameters:** `model__C`: ~0.00118, `model__penalty`: `l2`, `model__l1_ratio`: ~0.340
+  - **New People Inference (`data/compas_new_people.csv`, threshold 0.5):** More conservative under strong regularization, predicting **2 positives** (`900012` at 0.786, `900014` at 0.679) and **18 negatives** out of 20 new records[cite: 2].
+
+> **Overview 10th week:** 
+> Making the numeric imputer configurable and scaling prior to imputation keeps preprocessing leak-free and ready for unseen records without requiring target labels. Saving the fitted pipeline to `models/model.joblib` and running `predict.py` on `data/compas_new_people.csv` completed the end-to-end training-to-inference workflow while keeping the locked test set untouched for final evaluation.
+
+- **Fairness Audit (False Positive Rate by Race — Tuned Logistic Regression, OOF):**
+  - **African-American:** FPR = **0.18** (down from COMPAS's original **0.45**).
+  - **Caucasian:** FPR = **0.07** (vs. COMPAS's **0.23**).
+  - **Hispanic:** FPR = **0.09** (vs. COMPAS's **0.23**)
+
 ## Project structure
 
-```
+```text
 .
-├── main.py                # entry point: run the whole pipeline
-├── config.yaml             # all tunable settings live here
-├── requirements.txt
+├── main.py                    # entry point: train, cross-validate, tune & save model/report
+├── predict.py                 # batch inference on unseen data using the saved pipeline
+├── config.yaml                # main configuration (COMPAS dataset, preprocessing, tuning, model)
+├── config_adult.yaml          # alternative dataset configuration (Adult dataset)
+├── requirements.txt           # Python dependencies
+├── predictions.csv            # generated predictions from predict.py
 ├── src/
-│   ├── data.py             # loading
-│   ├── preprocessing.py    # cleaning + train/test split
-│   ├── model.py             # model construction
-│   ├── evaluate.py         # accuracy metrics + fairness check
-│   └── results.py          # saves each run's report to disk
-├── results/                # created automatically -- one file per run (not tracked in git)
+│   ├── __init__.py
+│   ├── data.py                # dataset loading
+│   ├── data_diagnostics.py    # data quality checks and diagnostics
+│   ├── preprocessing.py       # cleaning, scaling/imputation pipeline & leak-safe dev/test split
+│   ├── model.py               # model & pipeline construction (including optional feature selection)
+│   ├── tuning.py              # Optuna hyperparameter tuning & nested cross-validation
+│   ├── evaluate.py            # CV metrics, OOF classification report & fairness audit
+│   └── results.py             # run reports and scoreboard logging (runs.csv)
+├── models/                    # saved fitted pipelines (e.g., models/model.joblib)
+├── results/                   # run reports and scoreboard (created automatically)
 └── data/
     ├── compas_two_year_recidivism.csv
-    └── README.md            # problem description + full data dictionary
-```
+    ├── compas_new_people.csv
+    ├── adult_train.csv
+    └── README.md              # problem description + full data dictionary
 
 ## Pipeline progress
 
@@ -190,7 +218,16 @@ All of this is also saved to a timestamped file in `results/` (e.g.`results/run_
 pipeline, and isn't tracked in git (see `.gitignore`) since it's
 generated output, not source.
 
-You're free to improve on this structure or restructure it entirely -- what matters is that your project stays runnable end-to-end with a single command, and that each piece (data, preprocessing, model, evaluation) stays easy to find and change independently.
+## Missing values
+- Numeric features (`age`, `juv_fel_count`, `juv_misd_count`, `juv_other_count`, `priors_count`) are scaled first (`none | standard | minmax | robust`) and then imputed according to `preprocessing.imputation.numeric_strategy` (`median`, `mean`, `knn`, `iterative`, `random_forest`).
+- Categorical features (`sex`, `age_cat`, `c_charge_degree`) are imputed (`most_frequent` by default) and encoded (`onehot | ordinal | count | target`), with missingness indicators (`<col>_was_missing`) passed through for `mnar_indicator_sources`.
+- All fitting happens strictly inside CV/tuning splits or on the development set (`X_dev`, `y_dev`), and no imputer uses the target, avoiding data leakage.
+
+## Predicting new data
+Train and save the final pipeline with `main.py` (writes `models/model.joblib`, `results/runs.csv`, and the run report), then run inference on unseen data with `predict.py`:
+
+```bash
+python predict.py data/compas_new_people.csv predictions.csv
 
 ## Dataset
 
