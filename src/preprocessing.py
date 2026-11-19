@@ -27,9 +27,9 @@ import numpy as np
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.experimental import enable_iterative_imputer  # noqa: F401
 from sklearn.impute import IterativeImputer, KNNImputer, SimpleImputer
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.experimental import enable_iterative_imputer
 from sklearn.preprocessing import (
     OneHotEncoder, OrdinalEncoder, TargetEncoder, StandardScaler, MinMaxScaler, RobustScaler,
 )

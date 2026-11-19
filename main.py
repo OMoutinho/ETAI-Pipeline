@@ -7,6 +7,8 @@ model) on the development set (several metrics, and the no-model floor on the sa
 -> [if tuning is enabled: nested CV of the tuning procedure, then tuning on all development rows]
 -> out-of-fold reports -> refit on all development rows -> scoreboard + full report
 """
+import os
+import joblib
 import sys
 import shutil
 import tempfile
@@ -59,9 +61,10 @@ def main():
     n_jobs = cv_config.get("n_jobs", 1)
     selection_config = config.get("feature_selection") or {}
     selection_enabled = selection_config.get("enabled", False)
-    print(f"Model: {model_type}   |   imputer: {imputer_name}   |   selection metric: {selection_metric}   |   "
+    print(f"Model: {model_type}   |   selection metric: {selection_metric}   |   "
           f"{cv_config['n_splits']}-fold CV   |   feature selection: "
-          f"{'min_votes ' + str(selection_config.get('min_votes', 2)) if selection_enabled else 'off'}")
+          f"{'min_votes ' + str(selection_config.get('min_votes', 2)) if selection_enabled else 'off'}   |   "
+          f"numeric imputer: {config['preprocessing'].get('imputation', {}).get('numeric_strategy', 'median')}")
     print(f"Data:  {len(X_dev)} development rows   |   {len(X_test)} test rows locked away (not used)")
 
     cache_dir = tempfile.mkdtemp(prefix="pipeline_cache_")       # deleted at the end of the run
@@ -152,6 +155,14 @@ def main():
     shutil.rmtree(cache_dir, ignore_errors=True)
     path = save_run(config.get("output", {}).get("results_dir", "results"), run, config, report)
     print(f"\n{refit}\nFull report (per-fold tables, tuning, confusion matrix, fairness): {path}")
+
+     # The final fitted pipeline: what predict.py loads to predict new data.
+    model_path = config.get("output", {}).get("model_path", "models/model.joblib")
+    os.makedirs(os.path.dirname(model_path) or ".", exist_ok=True)
+    pipeline.set_params(memory=None)                # the cache folder was deleted; the saved model doesn't need it
+    joblib.dump(pipeline, model_path)
+    print(f"\n{refit}\nFull report (per-fold tables, tuning, confusion matrix, fairness): {path}"
+          f"\nModel saved for predict.py: {model_path}")
 
 
 if __name__ == "__main__":

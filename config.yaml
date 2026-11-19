@@ -145,4 +145,5 @@ fairness:
   
 output:
   results_dir: "results"
+  model_path: "models/model.joblib"  
   scoreboard: "results/runs.csv"                   
