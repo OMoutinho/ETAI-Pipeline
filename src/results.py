@@ -27,7 +27,7 @@ def save_run(results_dir: str, run: str, config: dict, report_text: str) -> str:
     cv = config["cv"]
     tuning = config.get("tuning", {})
     tuning_line = (f"Optuna, {tuning['n_trials']} trials x {tuning['n_splits']} folds, nested CV  "
-                   f"random_state={tuning['random_state']}" if tuning.get("enabled") else "off")
+                   f"Random_state={tuning['random_state']}" if tuning.get("enabled") else "off")
     selection = config.get("feature_selection") or {}
     selection_line = (f"VoteSelector, min_votes={selection.get('min_votes', 2)} (before tuning)"
                       if selection.get("enabled") else "off")
@@ -35,15 +35,16 @@ def save_run(results_dir: str, run: str, config: dict, report_text: str) -> str:
         f"Run: {run}\n"
         f"Model: {config['model']['type']}  params={config['model'].get('params')}\n"
         f"Preprocessing: encoder={config['preprocessing']['encoder']}  "
-        f"scaler={config['preprocessing']['scaler']}"
-        f"numeric imputer={config['preprocessing'].get('imputation', {}).get('numeric_strategy', 'median')}\n"
+        f"Scaler={config['preprocessing']['scaler']}"
+        f"Numeric imputer={config['preprocessing'].get('imputation', {}).get('numeric_strategy', 'median')}  "
+        f"Anomaly score={(config.get('anomaly') or {}).get('method', 'none')}\n"
         f"CV: {cv['n_splits']} stratified folds  shuffle={cv.get('shuffle', True)}  "
-        f"random_state={cv.get('random_state')}\n"
+        f"Random_state={cv.get('random_state')}\n"
         f"Metrics: {cv['metrics']}  selection metric: {cv['selection_metric']}\n"
         f"Tuning: {tuning_line}\n"
         f"Feature Selection: {selection_line}\n"
         f"Locked test set: size={config['test_set']['size']}  "
-        f"random_state={config['test_set']['random_state']}  (not evaluated)\n"
+        f"Random_state={config['test_set']['random_state']}  (not evaluated)\n"
         + "=" * 60 + "\n\n"
     )
 

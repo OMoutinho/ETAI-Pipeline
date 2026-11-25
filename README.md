@@ -105,11 +105,17 @@ Upgraded numeric preprocessing to support configurable imputers via `preprocessi
   - **Honest Nested CV ROC-AUC:** **0.718** (std: 0.014; train-validation gap: +0.002)
   - **Best Hyperparameters:** `model__C`: ~0.00118, `model__penalty`: `l2`, `model__l1_ratio`: ~0.340
   - **New People Inference (`data/compas_new_people.csv`, threshold 0.5):** More conservative under strong regularization, predicting **2 positives** (`900012` at 0.786, `900014` at 0.679) and **18 negatives** out of 20 new records.
-  **XGBoost (`median` imputer, tuned — run `20261119_150109`):**
-- **Honest Nested CV ROC-AUC:** **0.727** (std: 0.015; untuned: **0.724**, train-validation gap: +0.034)
+- **XGBoost (`median` imputer, tuned — run `20261119_150109`):**
+  - **Honest Nested CV ROC-AUC:** **0.727** (std: 0.015; untuned: **0.724**, train-validation gap: +0.034)
   - **Additional Nested CV Metrics (mean ± std):** accuracy **0.681 ± 0.013**, balanced accuracy **0.670 ± 0.013**, precision **0.674 ± 0.025**, recall **0.567 ± 0.039**, F1 **0.615 ± 0.020**, F2 **0.585 ± 0.031**, average precision **0.691 ± 0.027**
   - **Best Hyperparameters:** `n_estimators`: 287, `learning_rate`: 0.01466, `max_depth`: 3, `min_child_weight`: 1.993, `subsample`: 0.5083, `colsample_bytree`: 0.8338, `reg_lambda`: 0.1488, `reg_alpha`: 0.01377, `gamma`: 0.3906
   - **New People Inference (`data/compas_new_people.csv`, threshold 0.5):** Predicted **5 positives** (`900004` at ~0.623, `900006` at ~0.590, `900012` at ~0.826, `900014` at ~0.718, `900017` at ~0.704) and **15 negatives** out of 20 new records.
+- **AdaBoost (`median` imputer, tuned — run `20261119_151539`):**
+  - **Honest Nested CV ROC-AUC:** **0.727** (std: 0.015; untuned: **0.723**, train-validation gap: +0.013 in nested CV / +0.005 default CV)
+  - **Additional Nested CV Metrics (mean ± std):** accuracy **0.683 ± 0.015**, balanced accuracy **0.673 ± 0.015**, precision **0.677 ± 0.022**, recall **0.569 ± 0.035**, F1 **0.618 ± 0.022**, F2 **0.588 ± 0.030**, average precision **0.689 ± 0.025**
+  - **Best Hyperparameters:** `model__estimator__max_depth`: 4, `model__n_estimators`: 55, `model__learning_rate`: ~0.167
+  - **New People Inference (`data/compas_new_people.csv`, threshold 0.5):** Predicted **6 positives** (`900004` at ~0.754, `900006` at ~0.643, `900008` at ~0.548, `900012` at ~0.881, `900014` at ~0.721, `900017` at ~0.772) and **14 negatives** out of 20 new records.
+  - **Fairness Audit (False Positive Rate by Race, OOF):** African-American FPR = **0.30** (vs. COMPAS **0.45**), Caucasian FPR = **0.17** (vs. **0.23**), Hispanic FPR = **0.15** (vs. **0.23**).
 
 > **Overview 10th week:** 
 > Making the numeric imputer configurable and scaling prior to imputation keeps preprocessing leak-free and ready for unseen records without requiring target labels. Saving the fitted pipeline to `models/model.joblib` and running `predict.py` on `data/compas_new_people.csv` completed the end-to-end training-to-inference workflow while keeping the locked test set untouched for final evaluation.
@@ -118,6 +124,26 @@ Upgraded numeric preprocessing to support configurable imputers via `preprocessi
   - **African-American:** FPR = **0.18** (down from COMPAS's original **0.45**).
   - **Caucasian:** FPR = **0.07** (vs. COMPAS's **0.23**).
   - **Hispanic:** FPR = **0.09** (vs. COMPAS's **0.23**)
+
+### Week 11: Unsupervised Anomaly Score Feature Engineering (`AnomalyScore`)
+Extended the preprocessing pipeline with an unsupervised `AnomalyScore` transformer (`src/preprocessing.py`) integrated into `build_pipeline` (`src/model.py`) and configurable via `config.yaml` (`anomaly.method`: `"none"`, `"isolation_forest"`, or `"lof"`). When enabled, the step fits strictly on each training fold (preventing data leakage) and appends an `anomaly_score` feature measuring how unusual each record is relative to the training distribution—using Isolation Forest (`-score_samples(X)`) or Local Outlier Factor (`novelty=True`)—before optional feature selection and model training. The selected anomaly method is logged in `runs.csv`, displayed in the scoreboard, and serialized inside `models/model.joblib` for seamless inference with `predict.py`.
+
+- **AdaBoost (`median` imputer, untuned — Anomaly Method Comparison):**
+  - **`none` (run `20261125_104541`):** CV ROC-AUC **0.723 ± 0.016** (accuracy **0.676 ± 0.012**, F1 **0.599 ± 0.018**, average precision **0.685 ± 0.022**).
+  - **`lof` (run `20261125_105105`):** CV ROC-AUC **0.722 ± 0.016** (accuracy **0.677 ± 0.011**, F1 **0.604 ± 0.017**, average precision **0.684 ± 0.024**).
+  - **`isolation_forest` (run `20261125_105144`):** CV ROC-AUC **0.722 ± 0.016** (accuracy **0.677 ± 0.012**, F1 **0.605 ± 0.015**, average precision **0.683 ± 0.025**).
+- **Hist Gradient Boosting (`median` imputer, tuned — 30 trials nested CV):**
+  - **`isolation_forest` (run `20261125_110105`):**
+    - **Honest Nested CV ROC-AUC:** **0.726 ± 0.014** (untuned: **0.707 ± 0.018**, train-validation gap: +0.059)
+    - **Additional Nested CV Metrics (mean ± std):** accuracy **0.674 ± 0.016**, balanced accuracy **0.671 ± 0.016**, precision **0.639 ± 0.018**, recall **0.638 ± 0.026**, F1 **0.638 ± 0.020**, F2 **0.638 ± 0.023**, average precision **0.689 ± 0.025**
+    - **Best Hyperparameters:** `max_iter`: 494, `learning_rate`: 0.02389, `max_leaf_nodes`: 4, `min_samples_leaf`: 124, `l2_regularization`: 2.034e-05
+  - **`none` (run `20261125_110759` — controlled baseline):**
+    - **Honest Nested CV ROC-AUC:** **0.727 ± 0.016** (untuned: **0.717 ± 0.020**, train-validation gap: +0.058)
+    - **Additional Nested CV Metrics (mean ± std):** accuracy **0.675 ± 0.015**, balanced accuracy **0.671 ± 0.015**, precision **0.639 ± 0.017**, recall **0.638 ± 0.023**, F1 **0.639 ± 0.018**, F2 **0.638 ± 0.021**, average precision **0.692 ± 0.026**
+    - **Best Hyperparameters:** `max_iter`: 82, `learning_rate`: 0.1109, `max_leaf_nodes`: 4, `min_samples_leaf`: 130, `l2_regularization`: 0.0006996
+
+> **Overview 11th week:** 
+> Adding an unsupervised `anomaly_score` feature (`isolation_forest` or `lof`) worked cleanly inside cross-validation and `predict.py`, but controlled comparisons on identical folds showed no meaningful predictive gain over `anomaly: none` (`0.722` vs. `0.723` on untuned AdaBoost; `0.726` vs. `0.727` on tuned Hist Gradient Boosting, well within fold standard deviation). Because COMPAS contains discrete counts and frequent duplicate feature profiles after encoding, distance-based outlier scores (`lof`) and isolation scores do not add extra discriminative signal beyond what shallow regularized gradient boosted trees (`max_leaf_nodes=4`, `min_samples_leaf ~ 124–130`) already capture.
 
 ## Project structure
 
