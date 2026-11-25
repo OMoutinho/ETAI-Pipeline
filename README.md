@@ -126,8 +126,11 @@ Upgraded numeric preprocessing to support configurable imputers via `preprocessi
   - **Hispanic:** FPR = **0.09** (vs. COMPAS's **0.23**)
 
 ### Week 11: Unsupervised Anomaly Score Feature Engineering (`AnomalyScore`)
-Extended the preprocessing pipeline with an unsupervised `AnomalyScore` transformer (`src/preprocessing.py`) integrated into `build_pipeline` (`src/model.py`) and configurable via `config.yaml` (`anomaly.method`: `"none"`, `"isolation_forest"`, or `"lof"`). When enabled, the step fits strictly on each training fold (preventing data leakage) and appends an `anomaly_score` feature measuring how unusual each record is relative to the training distribution—using Isolation Forest (`-score_samples(X)`) or Local Outlier Factor (`novelty=True`)—before optional feature selection and model training. The selected anomaly method is logged in `runs.csv`, displayed in the scoreboard, and serialized inside `models/model.joblib` for seamless inference with `predict.py`.
+Extended the preprocessing pipeline with an unsupervised `AnomalyScore` transformer (`src/preprocessing.py`) integrated into `build_pipeline` (`src/model.py`) and configurable via `config.yaml` (`anomaly.method`: `"none"`, `"isolation_forest"`, or `"lof"`). When enabled, the step fits strictly on each training fold (preventing data leakage) and appends an `anomaly_score` feature measuring how unusual each record is relative to the training distribution—using Isolation Forest (`-score_samples(X)`) or Local Outlier Factor (`novelty=True`)—before optional feature selection and model training. The selected anomaly method is logged in `runs.csv`, displayed in the scoreboard, and serialized inside `models/model.joblib` for seamless inference with `predict.py` (verified on `data/compas_new_people.csv`, returning all 20 records with 7 predicted positives and 13 negatives at threshold `0.5` on the latest saved `hist_gradient_boosting` pipeline).
 
+- **Initial Guess & Top-5% Anomaly Recidivism Check:**
+  - **Initial guess:** Reoffenders are not strictly defined as statistical outliers in COMPAS, so `anomaly_score` was expected to offer at most a marginal lift rather than a major jump in ROC-AUC.
+  - **Top 5% most unusual (`isolation_forest`) vs. remaining 95%:** Recidivism rate is **0.595** in the top 5% most anomalous rows versus **0.443** across the remaining 95% (+15.2 percentage points).
 - **AdaBoost (`median` imputer, untuned — Anomaly Method Comparison):**
   - **`none` (run `20261125_104541`):** CV ROC-AUC **0.723 ± 0.016** (accuracy **0.676 ± 0.012**, F1 **0.599 ± 0.018**, average precision **0.685 ± 0.022**).
   - **`lof` (run `20261125_105105`):** CV ROC-AUC **0.722 ± 0.016** (accuracy **0.677 ± 0.011**, F1 **0.604 ± 0.017**, average precision **0.684 ± 0.024**).
@@ -143,8 +146,7 @@ Extended the preprocessing pipeline with an unsupervised `AnomalyScore` transfor
     - **Best Hyperparameters:** `max_iter`: 82, `learning_rate`: 0.1109, `max_leaf_nodes`: 4, `min_samples_leaf`: 130, `l2_regularization`: 0.0006996
 
 > **Overview 11th week:** 
-> Adding an unsupervised `anomaly_score` feature (`isolation_forest` or `lof`) worked cleanly inside cross-validation and `predict.py`, but controlled comparisons on identical folds showed no meaningful predictive gain over `anomaly: none` (`0.722` vs. `0.723` on untuned AdaBoost; `0.726` vs. `0.727` on tuned Hist Gradient Boosting, well within fold standard deviation). Because COMPAS contains discrete counts and frequent duplicate feature profiles after encoding, distance-based outlier scores (`lof`) and isolation scores do not add extra discriminative signal beyond what shallow regularized gradient boosted trees (`max_leaf_nodes=4`, `min_samples_leaf ~ 124–130`) already capture.
-
+> The initial guess held up: although the top 5% most unusual records reoffend more often (`0.595` vs. `0.443`), `anomaly_score` did not improve cross-validated ROC-AUC over `none` (`0.722` vs. `0.723` on untuned AdaBoost; `0.726` vs. `0.727` on tuned Hist Gradient Boosting, well within fold standard deviation). Because the top-anomaly slice is small (5%), contains both classes, and relies on feature patterns already accessible to tree splits, adding unsupervised outlier scores does not beat the clean `none` baseline on COMPAS.
 ## Project structure
 
 ```text
